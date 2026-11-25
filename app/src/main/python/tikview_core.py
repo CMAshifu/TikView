@@ -147,6 +147,22 @@ def resolve_live(user):
             "title": info.get("title") or info.get("description") or ""}
 
 
+MOBILE_UA = ("Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 "
+             "(KHTML, like Gecko) Chrome/131.0 Mobile Safari/537.36")
+
+
+def follow_link(url):
+    """Where a short TikTok share link (vm.tiktok.com/…) really points."""
+    if not re.match(r"^https?://([a-z0-9-]+\.)*tiktok\.com/", url or ""):
+        raise ValueError("That isn't a TikTok link.")
+    from yt_dlp.networking import Request
+    with yt_dlp.YoutubeDL(ydl_opts()) as y:
+        resp = y.urlopen(Request(url, headers={"User-Agent": MOBILE_UA}))
+        final = resp.url
+        resp.close()
+    return final
+
+
 SEC_UID_RE = re.compile(r'"secUid"\s*:\s*"(MS4wLjABAAAA[\w-]{64})"')
 
 
@@ -156,8 +172,7 @@ def get_sec_uid(user, refresh=False):
     if cfg.get("sec_uid") and not refresh:
         return cfg["sec_uid"]
     from yt_dlp.networking import Request
-    ua = ("Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 "
-          "(KHTML, like Gecko) Chrome/131.0 Mobile Safari/537.36")
+    ua = MOBILE_UA
     urls = [
         f"https://www.tiktok.com/api-live/user/room/?aid=1988&uniqueId={user}&sourceType=54",
         f"https://webcast.tiktok.com/webcast/room/info_by_user/?aid=1988&unique_id={user}",
@@ -497,6 +512,11 @@ def r_download(d, q):
     jobs[job_id] = job
     threading.Thread(target=run_download, args=(job,), daemon=True).start()
     return job
+
+
+@route("POST", "/api/resolve-link")
+def r_resolve_link(d, q):
+    return {"url": follow_link((d.get("url") or "").strip())}
 
 
 @route("GET", "/api/jobs")
