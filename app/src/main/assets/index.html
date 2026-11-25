@@ -74,6 +74,25 @@
   .empty { color:var(--muted); padding:40px; text-align:center; border:1px dashed var(--line); border-radius:12px; }
   .bar { height:4px; background:var(--line); border-radius:2px; overflow:hidden; } .bar div { height:100%; background:var(--cyan); }
   .switch { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); cursor:pointer; }
+  .disc-search { display:flex; gap:8px; margin-bottom:10px; }
+  .disc-search input { flex:1; }
+  .seg { display:inline-flex; background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:3px; margin-bottom:14px; }
+  .seg button { border:none; background:none; padding:6px 14px; border-radius:8px; color:var(--muted); }
+  .seg button.on { background:var(--panel); color:var(--text); box-shadow:0 1px 3px #0003; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
+  .chip { border-radius:999px; padding:7px 14px; background:var(--panel2); border:1px solid var(--line); display:inline-flex; align-items:center; gap:6px; }
+  .chip:hover { border-color:var(--accent); }
+  .chip .x { color:var(--muted); font-size:15px; line-height:1; padding-left:2px; }
+  .chip.add { border-style:dashed; color:var(--muted); }
+  .steps { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .steps ol { margin:8px 0 12px; padding-left:20px; color:var(--muted); } .steps ol b { color:var(--text); }
+  .help h3 { color:var(--text); text-transform:none; letter-spacing:0; font-size:15px; margin:18px 0 6px; }
+  .help p, .help li { color:var(--muted); margin:4px 0; } .help b { color:var(--text); }
+  .help ul { padding-left:18px; margin:4px 0; }
+  .brand { text-align:center; padding:6px 0 14px; border-bottom:1px solid var(--line); }
+  .brand .by { margin-top:8px; font-size:13px; color:var(--muted); }
+  .brand .co { font-weight:700; font-size:16px; color:var(--text); }
+  #helpBtn { padding:8px 12px; font-weight:700; }
   #toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--panel2); border:1px solid var(--line); padding:10px 16px; border-radius:10px; display:none; z-index:20; max-width:90vw; }
   .liveHead { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
   .modal { position:fixed; inset:0; background:#000b; display:none; place-items:center; z-index:30; padding:16px; }
@@ -124,6 +143,7 @@
     <button class="primary">Open</button>
   </form>
   <button id="themeBtn" title="Theme" aria-label="Light or dark mode"></button>
+  <button id="helpBtn" title="Help &amp; about" aria-label="Help">?</button>
   <button id="connectBtn" style="display:none">📱 Connect phone</button>
 </header>
 <div class="modal" id="pairModal"><div class="box">
@@ -167,6 +187,7 @@
     <div class="tabs">
       <button data-tab="videos" class="on">Videos</button>
       <button data-tab="live">Live</button>
+      <button data-tab="discover">Discover</button>
       <button data-tab="library">Downloads</button>
       <button data-tab="jobs">Activity</button>
     </div>
@@ -178,6 +199,34 @@
   <div style="display:flex;gap:10px;justify-content:flex-end">
     <button id="confirmCancel">Cancel</button><button class="primary" id="confirmOk">Remove</button>
   </div>
+</div></div>
+<div class="modal" id="helpModal"><div class="box help" style="max-width:480px;max-height:88vh;overflow:auto">
+  <div class="brand">
+    <div class="logo" style="font-size:28px"><b>Tik</b><span>View</span></div>
+    <div class="sub">Version 1.2</div>
+    <div class="by">Created by</div>
+    <div class="co">Miracle Computer Technologies</div>
+  </div>
+  <h3>Follow streamers</h3>
+  <p>Type a <b>@username</b> and tap <b>+</b>. A red ring and <b>LIVE</b> badge show who's live (checked every 90 seconds).</p>
+  <h3>Watch, record and save</h3>
+  <ul>
+    <li><b>▶ Watch</b> plays a video. <b>● Watch live</b> opens their live.</li>
+    <li><b>● Record</b> records a live; <b>Auto-record lives</b> records every time they go live.</li>
+    <li><b>⬇ Save</b> keeps a video. Find everything in the <b>Downloads</b> tab.</li>
+  </ul>
+  <h3>Discover new streamers</h3>
+  <p>In the <b>Discover</b> tab, search a topic (like <b>AI</b>) or tap a category. TikTok shows the results; copy a profile or live link and paste it into TikView to follow them.</p>
+  <h3 class="help-app">Share from TikTok</h3>
+  <p class="help-app">In the TikTok app, tap <b>Share → TikView</b> on any video, profile or live.</p>
+  <h3 class="help-desktop">Use it on your phone</h3>
+  <p class="help-desktop">Click <b>📱 Connect phone</b> and scan the code with your phone's camera.</p>
+  <h3>Light or dark</h3>
+  <p>The round button at the top switches between <b>Auto</b>, <b>Light</b> and <b>Dark</b>.</p>
+  <h3>Be fair to creators</h3>
+  <p>Downloads and recordings are for personal viewing. Don't re-upload other people's content without permission.</p>
+  <p class="sub" style="text-align:center;margin-top:18px">© 2026 Miracle Computer Technologies. All rights reserved.<br>Not affiliated with TikTok or ByteDance.</p>
+  <div style="text-align:right;margin-top:10px"><button class="primary" id="helpClose">Close</button></div>
 </div></div>
 <div id="toast"></div>
 
@@ -244,16 +293,23 @@ function renderStreamers() {
   }).join("");
   el.querySelectorAll(".streamer").forEach(d => d.onclick = () => { S.selected = d.dataset.u; renderStreamers(); if (S.tab !== "videos") setTab("videos"); else renderTab(); });
 }
+async function addStreamer(name, quiet) {
+  try {
+    const r = await post("/api/streamers", { username: name });
+    S.selected = r.username; await loadStreamers();
+    if (!quiet) { setTab("videos"); toast(`Added @${r.username} ✓`, 2500); }
+    return r.username;
+  } catch (err) { toast(err.message); return null; }
+}
 $("#addForm").onsubmit = async e => {
   e.preventDefault();
-  try { const r = await post("/api/streamers", { username: $("#addUser").value }); $("#addUser").value = ""; S.selected = r.username; await loadStreamers(); setTab("videos"); }
-  catch (err) { toast(err.message); }
+  if (await addStreamer($("#addUser").value)) $("#addUser").value = "";
 };
 
 /* ---------------- tabs ---------------- */
 document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => setTab(b.dataset.tab));
 function setTab(t) { S.tab = t; document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === t)); renderTab(); }
-function renderTab() { ({ videos: renderVideos, live: renderLive, library: renderLibrary, jobs: renderJobs })[S.tab](); }
+function renderTab() { ({ videos: renderVideos, live: renderLive, discover: renderDiscover, library: renderLibrary, jobs: renderJobs })[S.tab](); }
 
 async function renderVideos(force) {
   const c = $("#content"), u = S.selected;
@@ -430,16 +486,92 @@ async function stopLive(u) {
 }
 
 /* ---------------- paste link ---------------- */
-$("#pasteForm").onsubmit = e => {
-  e.preventDefault();
-  const url = $("#pasteUrl").value.trim(); if (!url) return;
+/** Any TikTok link (or @username): profile → follow, live → follow + watch, video → watch. */
+async function openLink(raw) {
+  let url = String(raw || "").trim(); if (!url) return false;
+  const inText = url.match(/https?:\/\/\S+/); if (inText) url = inText[0];   // shared text has extra words
+  if (/^@?[A-Za-z0-9._]{2,40}$/.test(url)) { await addStreamer(url); return true; }
+  if (!/tiktok\.com/i.test(url)) { toast("That doesn't look like a TikTok link."); return false; }
+  if (/\/\/(vm|vt)\.tiktok\.com\/|tiktok\.com\/t\//i.test(url)) {            // short share links
+    toast("Opening link…", 2000);
+    try { url = (await post("/api/resolve-link", { url })).url; }
+    catch (err) { toast("Couldn't open that link: " + err.message); return false; }
+  }
   const live = url.match(/tiktok\.com\/@([^/?#]+)\/live/);
-  if (live) return watchLive(live[1]);
-  const prof = url.match(/^@?([A-Za-z0-9._]+)$/) || url.match(/tiktok\.com\/@([^/?#]+)\/?(\?.*)?$/);
-  if (prof) { $("#addUser").value = prof[1]; return $("#addForm").requestSubmit(); }
-  const id = (url.match(/video\/(\d+)/) || [])[1];
-  watchVideo({ url, id, title: url });
+  if (live) { if (await addStreamer(live[1], true)) watchLive(live[1]); return true; }
+  const vid = url.match(/\/(?:video|photo|v)\/(\d+)/);
+  if (vid) { watchVideo({ url, id: vid[1], title: "TikTok video" }); return true; }
+  const prof = url.match(/tiktok\.com\/@([^/?#]+)/);
+  if (prof) { await addStreamer(prof[1]); return true; }
+  toast("Couldn't tell what that link is. Try a profile, live or video link.");
+  return false;
+}
+$("#pasteForm").onsubmit = async e => {
+  e.preventDefault();
+  if (await openLink($("#pasteUrl").value)) $("#pasteUrl").value = "";
 };
+
+/* ---------------- Discover ---------------- */
+const DEFAULT_TOPICS = ["AI", "Tech", "Gaming", "Music", "Cooking", "Education", "Fitness", "Comedy", "Business", "News", "Art", "Sports"];
+const SEARCH_KINDS = { user: "People", live: "Lives", video: "Videos" };
+let searchKind = "live";
+function myTopics() { try { return JSON.parse(localStorage.getItem("tikview-topics") || "[]"); } catch (e) { return []; } }
+function saveTopics(t) { try { localStorage.setItem("tikview-topics", JSON.stringify(t)); } catch (e) {} }
+function tiktokSearch(q) {
+  q = String(q || "").trim(); if (!q) return;
+  const path = { user: "search/user", live: "search/live", video: "search/video" }[searchKind];
+  const url = `https://www.tiktok.com/${path}?q=${encodeURIComponent(q)}`;
+  if (window.Android) location.href = url;          // opens the TikTok app (or browser)
+  else window.open(url, "_blank", "noopener");
+}
+function renderDiscover() {
+  const c = $("#content"), mine = myTopics();
+  const chip = (t, custom) => `<button class="chip" data-topic="${esc(t)}">${esc(t)}${custom ? `<span class="x" data-del-topic="${esc(t)}" title="Remove">×</span>` : ""}</button>`;
+  const shareTip = window.Android
+    ? `In the TikTok app, open their profile or live and tap <b>Share → TikView</b>.`
+    : `Open their profile or live, tap <b>Share → Copy link</b>, then paste it below.`;
+  c.innerHTML = `
+    <h3>Find streamers</h3>
+    <form class="disc-search" id="discForm">
+      <input type="text" id="discQ" placeholder="Search a topic or name, e.g. AI art" autocomplete="off">
+      <button class="primary">Search</button>
+    </form>
+    <div class="seg" id="discKind">${Object.entries(SEARCH_KINDS).map(([k, v]) => `<button type="button" data-kind="${k}" class="${k === searchKind ? "on" : ""}">${v}</button>`).join("")}</div>
+    <h3>Categories</h3>
+    <div class="chips">${DEFAULT_TOPICS.map(t => chip(t)).join("")}${mine.map(t => chip(t, true)).join("")}<button class="chip add" id="addTopic">+ Add your own</button></div>
+    <div class="steps">
+      <b>Found someone you like?</b>
+      <ol><li>Search opens TikTok's results for <b>${esc(SEARCH_KINDS[searchKind].toLowerCase())}</b>.</li>
+        <li>${shareTip}</li>
+        <li>They're added to your streamers, with live alerts and recording.</li></ol>
+      <form class="disc-search" id="discAdd" style="margin:0">
+        <input type="text" id="discLink" placeholder="Paste a profile, live or video link…" autocomplete="off">
+        <button>Add</button>
+      </form>
+    </div>`;
+  $("#discForm").onsubmit = e => { e.preventDefault(); tiktokSearch($("#discQ").value); };
+  $("#discAdd").onsubmit = async e => { e.preventDefault(); const ok = await openLink($("#discLink").value); if (ok && $("#discLink")) $("#discLink").value = ""; };
+  c.querySelectorAll("[data-kind]").forEach(b => b.onclick = () => { searchKind = b.dataset.kind; renderDiscover(); });
+  c.querySelectorAll("[data-topic]").forEach(b => b.onclick = e => {
+    const del = e.target.closest("[data-del-topic]");
+    if (del) { saveTopics(myTopics().filter(t => t !== del.dataset.delTopic)); renderDiscover(); return; }
+    tiktokSearch(b.dataset.topic);
+  });
+  $("#addTopic").onclick = () => {
+    c.querySelector(".chips").insertAdjacentHTML("beforeend", `<form id="topicForm" style="display:flex;gap:6px"><input type="text" id="topicIn" placeholder="New category" maxlength="30" style="width:150px"><button class="primary">Add</button></form>`);
+    $("#addTopic").remove(); $("#topicIn").focus();
+    $("#topicForm").onsubmit = e => { e.preventDefault(); const t = $("#topicIn").value.trim();
+      if (t && !DEFAULT_TOPICS.includes(t) && !myTopics().includes(t)) saveTopics([...myTopics(), t]); renderDiscover(); };
+  };
+}
+
+/* ---------------- Help ---------------- */
+const ON_COMPUTER = !window.Android && ["127.0.0.1", "localhost", "[::1]"].includes(location.hostname);
+if (!window.Android) document.querySelectorAll(".help-app").forEach(el => el.remove());
+if (!ON_COMPUTER) document.querySelectorAll(".help-desktop").forEach(el => el.remove());
+$("#helpBtn").onclick = () => $("#helpModal").classList.add("on");
+$("#helpClose").onclick = () => $("#helpModal").classList.remove("on");
+$("#helpModal").onclick = e => { if (e.target.id === "helpModal") $("#helpModal").classList.remove("on"); };
 
 /* ---------------- phone pairing ---------------- */
 if (["127.0.0.1", "localhost", "[::1]"].includes(location.hostname)) {
@@ -467,10 +599,11 @@ if (IS_APP) {
   });
   $("#pasteUrl").placeholder = "Paste a TikTok link (or Share → TikView)…";
 }
-window.openShared = url => { $("#pasteUrl").value = url; $("#pasteForm").requestSubmit(); };
+window.openShared = url => openLink(url);
 window.openUser = u => { S.selected = u; renderStreamers(); setTab("videos"); };
 window.handleBack = () => {
   if ($("#confirmModal").classList.contains("on")) { $("#confirmCancel").click(); return true; }
+  if ($("#helpModal").classList.contains("on")) { $("#helpModal").classList.remove("on"); return true; }
   if ($("#pairModal").classList.contains("on")) { $("#pairModal").classList.remove("on"); return true; }
   if ($("#viewer").classList.contains("on")) { closeViewer(); return true; }
   return false;
