@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>TikView</title>
+<meta name="theme-color" content="#0f0f12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="TikView">
+<script>
+  (function () { var t = "auto"; try { t = localStorage.getItem("tikview-theme") || "auto"; } catch (e) {}
+    document.documentElement.dataset.theme = t; })();
+</script>
+<style>
+  :root { --bg:#0f0f12; --panel:#17171c; --panel2:#1f1f26; --line:#2a2a33; --text:#ececf1;
+          --muted:#9a9aa8; --accent:#e8141c; --cyan:#3d8bff; --ok:#3ccf7a; color-scheme:dark; }
+  /* Light mode: chosen in the app, or "Auto" while the device is in light mode */
+  :root[data-theme=light] { --bg:#f6f6f8; --panel:#ffffff; --panel2:#f0f0f3; --line:#e2e2e8; --text:#16161a; --muted:#6b6b78; --accent:#d9121a; --cyan:#1f6fe0; --ok:#1fa85c; color-scheme:light; }
+  @media (prefers-color-scheme: light) { :root[data-theme=auto] { --bg:#f6f6f8; --panel:#ffffff; --panel2:#f0f0f3; --line:#e2e2e8; --text:#16161a; --muted:#6b6b78; --accent:#d9121a; --cyan:#1f6fe0; --ok:#1fa85c; color-scheme:light; } }
+  body, header, aside, .card, .vinfo, .list .item, .tabs, button, input[type=text] { transition:background-color .2s, color .2s, border-color .2s; }
+  #themeBtn { margin-left:auto; padding:8px 10px; line-height:0; }
+  * { box-sizing:border-box; }
+  body { margin:0; font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--text); }
+  button,input { font:inherit; color:inherit; }
+  a { color:inherit; text-decoration:none; }
+  body.app .viewer video { display:none; }
+  body.app .viewer.on { grid-template-columns:1fr; }
+  button { background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:7px 12px; cursor:pointer; }
+  button:hover { border-color:var(--muted); }
+  button.primary { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+  button.ghost { background:none; border:none; color:var(--muted); padding:4px 6px; }
+  input[type=text] { background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:8px 10px; width:100%; outline:none; }
+  input[type=text]:focus { border-color:var(--cyan); }
+  header { display:flex; align-items:center; gap:16px; padding:12px 20px; border-bottom:1px solid var(--line); background:var(--panel); position:sticky; top:0; z-index:5; }
+  .logo { font-weight:800; font-size:21px; letter-spacing:-.5px; white-space:nowrap; display:flex; align-items:center; gap:9px; font-style:italic; }
+  .logo-img { width:36px; height:36px; display:block; }
+  .logo .wm { color:var(--accent); padding-right:2px; } .logo b { color:var(--text); }
+  .paste { flex:1; display:flex; gap:8px; max-width:640px; }
+  .layout { display:grid; grid-template-columns:270px 1fr; min-height:calc(100vh - 57px); }
+  aside { border-right:1px solid var(--line); padding:16px; background:var(--panel); }
+  aside h3, main h3 { margin:0 0 10px; font-size:12px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); }
+  .add { display:flex; gap:6px; margin-bottom:16px; }
+  .streamer { display:flex; align-items:center; gap:10px; padding:8px; border-radius:10px; cursor:pointer; }
+  .streamer:hover { background:var(--panel2); } .streamer.sel { background:var(--panel2); outline:1px solid var(--line); }
+  .avatar { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,var(--cyan),var(--accent)); display:grid; place-items:center; font-weight:700; flex:none; position:relative; color:#fff; }
+  .avatar.live::after { content:""; position:absolute; inset:-3px; border:2px solid var(--accent); border-radius:50%; }
+  .sname { flex:1; min-width:0; } .sname div:first-child { font-weight:600; overflow:hidden; text-overflow:ellipsis; }
+  .sub { color:var(--muted); font-size:12px; }
+  .badge { background:var(--accent); color:#fff; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; }
+  .badge.rec { background:#b00020; animation:blink 1.2s infinite; } @keyframes blink { 50% { opacity:.4 } }
+  main { padding:18px 22px; min-width:0; }
+  .viewer { display:none; background:#000; border-radius:14px; overflow:hidden; margin-bottom:18px; border:1px solid var(--line); }
+  .viewer.on { display:grid; grid-template-columns:minmax(0,1fr) 300px; }
+  .viewer video { width:100%; max-height:72vh; background:#000; display:block; }
+  .vinfo { background:var(--panel); padding:16px; display:flex; flex-direction:column; gap:10px; }
+  .vinfo .t { font-weight:600; word-break:break-word; max-height:160px; overflow:auto; }
+  .vinfo .actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:auto; }
+  .tabs { display:flex; gap:4px; margin-bottom:14px; border-bottom:1px solid var(--line); }
+  .tabs button { background:none; border:none; border-bottom:2px solid transparent; border-radius:0; padding:8px 14px; color:var(--muted); }
+  .tabs button.on { color:var(--text); border-color:var(--accent); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:14px; }
+  .card { background:var(--panel); border:1px solid var(--line); border-radius:12px; overflow:hidden; display:flex; flex-direction:column; }
+  .thumb { aspect-ratio:9/16; background:var(--panel2) center/cover no-repeat; position:relative; cursor:pointer; }
+  .thumb .dur { position:absolute; right:6px; bottom:6px; background:#000a; color:#fff; padding:1px 6px; border-radius:4px; font-size:12px; }
+  .thumb .saved { position:absolute; left:6px; top:6px; background:var(--ok); color:#000; font-size:10px; font-weight:700; padding:2px 6px; border-radius:4px; }
+  .thumb::before { content:"▶"; position:absolute; inset:0; display:grid; place-items:center; font-size:38px; color:#fff; opacity:0; background:#0006; transition:.15s; }
+  .thumb:hover::before { opacity:1; }
+  .card .body { padding:8px 10px; display:flex; flex-direction:column; gap:6px; flex:1; }
+  .card .cap { font-size:13px; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .card .row { display:flex; gap:6px; margin-top:auto; } .card .row button { flex:1; padding:5px; font-size:12px; white-space:nowrap; }
+  .list .item { display:flex; align-items:center; gap:12px; padding:10px 12px; border:1px solid var(--line); border-radius:10px; margin-bottom:8px; background:var(--panel); }
+  .list .item .n { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .empty { color:var(--muted); padding:40px; text-align:center; border:1px dashed var(--line); border-radius:12px; }
+  .bar { height:4px; background:var(--line); border-radius:2px; overflow:hidden; } .bar div { height:100%; background:var(--cyan); }
+  .switch { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); cursor:pointer; }
+  .disc-search { display:flex; gap:8px; margin-bottom:10px; }
+  .disc-search input { flex:1; }
+  .seg { display:inline-flex; background:var(--panel2); border:1px solid var(--line); border-radius:10px; padding:3px; margin-bottom:14px; }
+  .seg button { border:none; background:none; padding:6px 14px; border-radius:8px; color:var(--muted); }
+  .seg button.on { background:var(--panel); color:var(--text); box-shadow:0 1px 3px #0003; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
+  .chip { border-radius:999px; padding:7px 14px; background:var(--panel2); border:1px solid var(--line); display:inline-flex; align-items:center; gap:6px; }
+  .chip:hover { border-color:var(--accent); }
+  .chip .x { color:var(--muted); font-size:15px; line-height:1; padding-left:2px; }
+  .chip.add { border-style:dashed; color:var(--muted); }
+  .steps { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px 16px; }
+  .steps ol { margin:8px 0 12px; padding-left:20px; color:var(--muted); } .steps ol b { color:var(--text); }
+  .help h3 { color:var(--text); text-transform:none; letter-spacing:0; font-size:15px; margin:18px 0 6px; }
+  .help p, .help li { color:var(--muted); margin:4px 0; } .help b { color:var(--text); }
+  .help ul { padding-left:18px; margin:4px 0; }
+  .brand { text-align:center; padding:6px 0 14px; border-bottom:1px solid var(--line); }
+  .brand .by { margin-top:8px; font-size:13px; color:var(--muted); }
+  .brand .co { font-weight:700; font-size:16px; color:var(--text); }
+  #helpBtn { padding:8px 12px; font-weight:700; }
+  #toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--panel2); border:1px solid var(--line); padding:10px 16px; border-radius:10px; display:none; z-index:20; max-width:90vw; }
+  .liveHead { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+  .modal { position:fixed; inset:0; background:#000b; display:none; place-items:center; z-index:30; padding:16px; }
+  .modal.on { display:grid; }
+  .modal .box { background:var(--panel); border:1px solid var(--line); border-radius:16px; padding:22px; max-width:440px; width:100%; }
+  .qr { background:#fff; border-radius:12px; padding:10px; width:220px; margin:14px auto; } .qr svg { width:100%; height:auto; display:block; }
+  .code { font:700 26px ui-monospace,monospace; letter-spacing:4px; text-align:center; color:var(--cyan); }
+  .modal ol { padding-left:20px; color:var(--muted); } .modal ol b { color:var(--text); }
+  body { padding-bottom:env(safe-area-inset-bottom); }
+  header { padding-top:max(12px, env(safe-area-inset-top)); }
+
+  /* ---------- phones ---------- */
+  @media (max-width:860px) {
+    header { flex-wrap:wrap; gap:10px; padding-left:12px; padding-right:12px; }
+    .paste { order:3; flex-basis:100%; max-width:none; }
+    .layout { grid-template-columns:1fr; min-height:0; }
+    aside { border-right:none; border-bottom:1px solid var(--line); padding:12px; }
+    aside h3 { display:none; }
+    .add { margin-bottom:10px; }
+    #streamerList { display:flex; gap:6px; overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:4px; scrollbar-width:none; }
+    #streamerList::-webkit-scrollbar { display:none; }
+    .streamer { flex-direction:column; gap:4px; min-width:72px; max-width:84px; padding:6px 4px; text-align:center; position:relative; }
+    .streamer .avatar { width:48px; height:48px; font-size:18px; }
+    .streamer .sname div:first-child { font-size:12px; font-weight:500; }
+    .streamer .sname .sub { display:none; }
+    .streamer .badge { position:absolute; top:42px; left:50%; transform:translateX(-50%); font-size:9px; }
+    main { padding:12px; }
+    .viewer { border-radius:0; margin:-12px -12px 14px; border-left:0; border-right:0; }
+    .viewer.on { grid-template-columns:1fr; }
+    .viewer video { max-height:68vh; }
+    .vinfo { padding:12px; } .vinfo .t { max-height:70px; }
+    .vinfo .actions button { padding:10px 14px; }
+    .tabs { overflow-x:auto; position:sticky; top:0; background:var(--bg); z-index:4; }
+    .tabs button { padding:10px 12px; white-space:nowrap; }
+    .grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+    .card .row button { padding:9px 4px; }
+    .liveHead { flex-wrap:wrap; }
+    .list .item { flex-wrap:wrap; } .list .item .n { flex-basis:100%; white-space:normal; word-break:break-all; }
+    #connectBtn { display:none !important; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><img class="logo-img" src="logo.png" alt=""><span class="wm"><b>Tik</b>View</span></div>
+  <form class="paste" id="pasteForm">
+    <input type="text" id="pasteUrl" placeholder="Paste any TikTok video link to watch or download…">
+    <button class="primary">Open</button>
+  </form>
+  <button id="themeBtn" title="Theme" aria-label="Light or dark mode"></button>
+  <button id="helpBtn" title="Help &amp; about" aria-label="Help">?</button>
+  <button id="connectBtn" style="display:none">📱 Connect phone</button>
+</header>
+<div class="modal" id="pairModal"><div class="box">
+  <h2 style="margin:0 0 4px">Use TikView on your phone</h2>
+  <div class="sub">Phone and computer must be on the same Wi-Fi.</div>
+  <div class="qr" id="qr"></div>
+  <ol>
+    <li>Open the <b>camera</b> on your iPhone or Android and point it at the code. Tap the link that pops up.</li>
+    <li>Or type <b id="pairUrl"></b> in the phone's browser and enter this code:</li>
+  </ol>
+  <div class="code" id="pairCode"></div>
+  <ol start="3">
+    <li><b>iPhone</b> (Safari): tap <b>Share → Add to Home Screen</b>.</li>
+    <li><b>Android</b> (Chrome): tap <b>⋮ → Add to Home screen</b>.</li>
+  </ol>
+  <div class="sub">Keep TikView running on this computer while you use the phone app.</div>
+  <div style="text-align:right;margin-top:14px"><button class="primary" onclick="$('#pairModal').classList.remove('on')">Done</button></div>
+</div></div>
+
+<div class="layout">
+  <aside>
+    <h3>Streamers</h3>
+    <form class="add" id="addForm">
+      <input type="text" id="addUser" placeholder="@username">
+      <button class="primary" title="Add">+</button>
+    </form>
+    <div id="streamerList"></div>
+  </aside>
+
+  <main>
+    <section class="viewer" id="viewer">
+      <video id="video" controls playsinline></video>
+      <div class="vinfo">
+        <div class="sub" id="vKind"></div>
+        <div class="t" id="vTitle"></div>
+        <div class="sub" id="vStatus"></div>
+        <div class="actions" id="vActions"></div>
+      </div>
+    </section>
+
+    <div class="tabs">
+      <button data-tab="videos" class="on">Videos</button>
+      <button data-tab="live">Live</button>
+      <button data-tab="discover">Discover</button>
+      <button data-tab="library">Downloads</button>
+      <button data-tab="jobs">Activity</button>
+    </div>
+    <div id="content"></div>
+  </main>
+</div>
+<div class="modal" id="confirmModal"><div class="box" style="max-width:340px">
+  <div id="confirmMsg" style="font-size:16px;font-weight:600;margin-bottom:18px"></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end">
+    <button id="confirmCancel">Cancel</button><button class="primary" id="confirmOk">Remove</button>
+  </div>
+</div></div>
+<div class="modal" id="helpModal"><div class="box help" style="max-width:480px;max-height:88vh;overflow:auto">
+  <div class="brand">
+    <img src="logo.png" alt="TikView" style="width:150px;height:150px;display:block;margin:0 auto">
+    <div class="sub">Version 1.2</div>
+    <div class="by">Created by</div>
+    <div class="co">Miracle Computer Technologies</div>
+  </div>
+  <h3>Follow streamers</h3>
+  <p>Type a <b>@username</b> and tap <b>+</b>. A red ring and <b>LIVE</b> badge show who's live (checked every 90 seconds).</p>
+  <h3>Watch, record and save</h3>
+  <ul>
+    <li><b>▶ Watch</b> plays a video. <b>● Watch live</b> opens their live.</li>
+    <li><b>● Record</b> records a live; <b>Auto-record lives</b> records every time they go live.</li>
+    <li><b>⬇ Save</b> keeps a video. Find everything in the <b>Downloads</b> tab.</li>
+  </ul>
+  <h3>Discover new streamers</h3>
+  <p>In the <b>Discover</b> tab, search a topic (like <b>AI</b>) or tap a category. TikTok shows the results; copy a profile or live link and paste it into TikView to follow them.</p>
+  <h3 class="help-app">Share from TikTok</h3>
+  <p class="help-app">In the TikTok app, tap <b>Share → TikView</b> on any video, profile or live.</p>
+  <h3 class="help-desktop">Use it on your phone</h3>
+  <p class="help-desktop">Click <b>📱 Connect phone</b> and scan the code with your phone's camera.</p>
+  <h3>Light or dark</h3>
+  <p>The round button at the top switches between <b>Auto</b>, <b>Light</b> and <b>Dark</b>.</p>
+  <h3>Be fair to creators</h3>
+  <p>Downloads and recordings are for personal viewing. Don't re-upload other people's content without permission.</p>
+  <p class="sub" style="text-align:center;margin-top:18px">© 2026 Miracle Computer Technologies. All rights reserved.<br>Not affiliated with TikTok or ByteDance.</p>
+  <div style="text-align:right;margin-top:10px"><button class="primary" id="helpClose">Close</button></div>
+</div></div>
+<div id="toast"></div>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmtDur = s => s ? `${Math.floor(s/60)}:${String(Math.round(s%60)).padStart(2,"0")}` : "";
+const fmtSize = b => b > 1e9 ? (b/1e9).toFixed(2)+" GB" : (b/1e6).toFixed(1)+" MB";
+const fmtNum = n => n == null ? "" : n >= 1e6 ? (n/1e6).toFixed(1)+"M" : n >= 1e3 ? (n/1e3).toFixed(1)+"K" : n;
+const IS_APP = !!window.Android;
+const BRIDGE = {}; let bridgeId = 0;
+window.__bridgeResolve = (id, s) => { const f = BRIDGE[id]; delete BRIDGE[id]; if (f) f(JSON.parse(s)); };
+async function api(path, opts = {}) {
+  if (IS_APP) {
+    const r = await new Promise(res => { const id = ++bridgeId; BRIDGE[id] = res; Android.request(id, opts.method || "GET", path, opts.body || ""); });
+    if (r.status >= 400) throw new Error((r.body && r.body.error) || "Something went wrong");
+    return r.body;
+  }
+  const r = await fetch(path, { headers: {"Content-Type":"application/json"}, ...opts });
+  const j = await r.json().catch(() => ({}));
+  if (r.status === 401) { location.reload(); throw new Error("Not paired"); }
+  if (!r.ok) throw new Error(j.error || r.statusText);
+  return j;
+}
+const post = (p, body) => api(p, { method: "POST", body: JSON.stringify(body || {}) });
+function toast(msg, ms = 3500) { const t = $("#toast"); t.textContent = msg; t.style.display = "block"; clearTimeout(t._h); t._h = setTimeout(() => t.style.display = "none", ms); }
+
+const IS_IOS = /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const IS_PHONE = IS_IOS || /Android|Mobi/.test(navigator.userAgent);
+const S = { streamers: [], selected: null, tab: "videos", videos: {}, player: null };
+let hls = null;
+
+/* ---------------- confirm box (works inside the Android app too) ---------------- */
+function askConfirm(msg, okLabel = "Remove") {
+  return new Promise(resolve => {
+    const m = $("#confirmModal");
+    $("#confirmMsg").textContent = msg; $("#confirmOk").textContent = okLabel;
+    const done = v => { m.classList.remove("on"); m.onclick = $("#confirmOk").onclick = $("#confirmCancel").onclick = null; resolve(v); };
+    $("#confirmOk").onclick = () => done(true);
+    $("#confirmCancel").onclick = () => done(false);
+    m.onclick = e => { if (e.target === m) done(false); };
+    m.classList.add("on");
+  });
+}
+
+/* ---------------- streamers ---------------- */
+async function loadStreamers() {
+  S.streamers = await api("/api/streamers");
+  if (!S.selected && S.streamers.length) S.selected = S.streamers[0].username;
+  renderStreamers();
+  if (S.tab === "live") renderTab();
+}
+function renderStreamers() {
+  const el = $("#streamerList");
+  if (!S.streamers.length) { el.innerHTML = `<div class="sub">Add a streamer by their TikTok username to get started.</div>`; return; }
+  el.innerHTML = S.streamers.map(s => {
+    const live = s.status?.live, rec = s.session?.state === "running" && s.session.record;
+    return `<div class="streamer ${s.username === S.selected ? "sel" : ""}" data-u="${esc(s.username)}">
+      <div class="avatar ${live ? "live" : ""}">${esc(s.username[0].toUpperCase())}</div>
+      <div class="sname"><div>@${esc(s.username)}</div>
+        <div class="sub">${live ? "Live now" : s.status?.checked ? "Offline" : "Checking…"}</div></div>
+      ${rec ? `<span class="badge rec">REC</span>` : live ? `<span class="badge">LIVE</span>` : ""}
+    </div>`;
+  }).join("");
+  el.querySelectorAll(".streamer").forEach(d => d.onclick = () => { S.selected = d.dataset.u; renderStreamers(); if (S.tab !== "videos") setTab("videos"); else renderTab(); });
+}
+async function addStreamer(name, quiet) {
+  try {
+    const r = await post("/api/streamers", { username: name });
+    S.selected = r.username; await loadStreamers();
+    if (!quiet) { setTab("videos"); toast(`Added @${r.username} ✓`, 2500); }
+    return r.username;
+  } catch (err) { toast(err.message); return null; }
+}
+$("#addForm").onsubmit = async e => {
+  e.preventDefault();
+  if (await addStreamer($("#addUser").value)) $("#addUser").value = "";
+};
+
+/* ---------------- tabs ---------------- */
+document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => setTab(b.dataset.tab));
+function setTab(t) { S.tab = t; document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === t)); renderTab(); }
+function renderTab() { ({ videos: renderVideos, live: renderLive, discover: renderDiscover, library: renderLibrary, jobs: renderJobs })[S.tab](); }
+
+async function renderVideos(force) {
+  const c = $("#content"), u = S.selected;
+  if (!u) { c.innerHTML = `<div class="empty">Add a streamer on the left, or paste a video link above.</div>`; return; }
+  const s = S.streamers.find(x => x.username === u) || {};
+  const head = `<div class="liveHead"><h3 style="margin:0">@${esc(u)}</h3>
+    ${s.status?.live ? `<button class="primary" id="watchLiveBtn">● Watch live</button>` : ""}
+    ${s.status?.live && !(s.session?.state === "running" && s.session.record) ? `<button id="recLiveBtn">● Record</button>` : ""}
+    ${s.session?.state === "running" && s.session.record ? `<button id="stopRecBtn">■ Stop recording</button>` : ""}
+    <span style="flex:1"></span>
+    <label class="switch"><input type="checkbox" id="autoRec" ${s.auto_record ? "checked" : ""}> Auto-record lives</label>
+    <button id="refreshBtn">Refresh</button>
+    <button class="ghost" id="removeBtn" title="Remove streamer">Remove</button></div>`;
+  if (!S.videos[u] || force) {
+    c.innerHTML = head + `<div class="empty">Loading videos from TikTok…</div>`; bindHead(u);
+    try { S.videos[u] = await api(`/api/streamers/${u}/videos?limit=30`); }
+    catch (err) { if (S.selected === u && S.tab === "videos") { c.innerHTML = head + `<div class="empty">Couldn't load videos: ${esc(err.message)}<br><br><span class="sub">Tap Refresh to try again. If it keeps failing, rebuild the app on GitHub (Actions → Run workflow) to get the newest TikTok fixes.</span></div>`; bindHead(u); } return; }
+  }
+  if (S.selected !== u || S.tab !== "videos") return;
+  const vids = S.videos[u];
+  c.innerHTML = head + (vids.length ? `<div class="grid">${vids.map((v, i) => `
+    <div class="card">
+      <div class="thumb" data-i="${i}" style="background-image:url('${esc(v.thumbnail || "")}')">
+        ${v.local ? `<span class="saved">SAVED</span>` : ""}<span class="dur">${fmtDur(v.duration)}</span></div>
+      <div class="body"><div class="cap">${esc(v.title) || "<i>No caption</i>"}</div>
+        <div class="sub">${v.views != null ? fmtNum(v.views) + " views · " : ""}${v.timestamp ? new Date(v.timestamp*1000).toLocaleDateString() : ""}</div>
+        <div class="row"><button data-play="${i}">▶ Watch</button><button data-dl="${i}">⬇ Save</button></div></div>
+    </div>`).join("")}</div>` : `<div class="empty">No videos found.</div>`);
+  bindHead(u);
+  c.querySelectorAll("[data-i],[data-play]").forEach(b => b.onclick = () => watchVideo(vids[b.dataset.i ?? b.dataset.play]));
+  c.querySelectorAll("[data-dl]").forEach(b => b.onclick = () => downloadVideo(vids[b.dataset.dl], true));
+}
+function bindHead(u) {
+  const w = $("#watchLiveBtn"); if (w) w.onclick = () => watchLive(u);
+  const rl = $("#recLiveBtn"); if (rl) rl.onclick = () => recordLive(u);
+  const sr = $("#stopRecBtn"); if (sr) sr.onclick = () => stopLive(u);
+  $("#refreshBtn").onclick = async () => { post(`/api/streamers/${u}/check`).then(loadStreamers).catch(() => {}); renderVideos(true); };
+  $("#autoRec").onchange = async e => { await api(`/api/streamers/${u}`, { method: "PATCH", body: JSON.stringify({ auto_record: e.target.checked }) }); toast(e.target.checked ? `Lives from @${u} will be recorded automatically while TikView is open.` : "Auto-record off."); loadStreamers(); };
+  $("#removeBtn").onclick = async () => {
+    if (!(await askConfirm(`Remove @${u} from your streamers?`))) return;
+    try {
+      await api(`/api/streamers/${u}`, { method: "DELETE" });
+      delete S.videos[u]; S.selected = null;
+      await loadStreamers(); renderTab(); toast(`Removed @${u}`);
+    } catch (err) { toast("Couldn't remove: " + err.message); }
+  };
+}
+
+async function renderLive() {
+  const c = $("#content");
+  const live = S.streamers.filter(s => s.status?.live);
+  const sessions = await api("/api/live");
+  c.innerHTML = `<h3>Live now</h3>` + (live.length ? `<div class="list">${live.map(s => {
+      const ss = sessions.find(x => x.user === s.username && x.state !== "ended");
+      return `<div class="item"><span class="badge">LIVE</span><div class="n"><b>@${esc(s.username)}</b> <span class="sub">${esc(s.status.title || "")}${s.status.viewers ? " · " + fmtNum(s.status.viewers) + " watching" : ""}</span></div>
+        ${ss?.record ? `<span class="badge rec">REC</span>` : ""}
+        <button class="primary" data-w="${esc(s.username)}">Watch</button>
+        ${ss?.record ? `<button data-stop="${esc(s.username)}">Stop recording</button>` : `<button data-r="${esc(s.username)}">● Record</button>`}</div>`; }).join("")}</div>`
+    : `<div class="empty">None of your streamers are live right now.<br><span class="sub">Live status is checked automatically every ${90} seconds.</span></div>`);
+  c.querySelectorAll("[data-w]").forEach(b => b.onclick = () => watchLive(b.dataset.w));
+  c.querySelectorAll("[data-r]").forEach(b => b.onclick = () => recordLive(b.dataset.r));
+  c.querySelectorAll("[data-stop]").forEach(b => b.onclick = () => stopLive(b.dataset.stop));
+}
+
+async function renderLibrary() {
+  const files = await api("/api/library"), c = $("#content");
+  c.innerHTML = `<h3>Downloads &amp; recordings</h3>` + (files.length ? `<div class="list">${files.map((f, i) => `
+    <div class="item">${f.live ? `<span class="badge">LIVE REC</span>` : ""}<div class="n">${esc(f.file)}</div>
+      <span class="sub">${fmtSize(f.size)} · ${new Date(f.mtime*1000).toLocaleString()}</span>
+      <button data-p="${i}">▶ Play</button>
+      <a href="/media/${encodeURIComponent(f.file)}?dl=1"><button>⬇ Save to device</button></a>
+      <button class="ghost" data-del="${i}">Delete</button></div>`).join("")}</div>`
+    : `<div class="empty">Nothing downloaded yet.</div>`);
+  c.querySelectorAll("[data-p]").forEach(b => b.onclick = () => playFile(files[b.dataset.p].file, files[b.dataset.p].file, "Downloaded file"));
+  c.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => { if (!(await askConfirm("Delete this file?", "Delete"))) return; await api(`/api/library/${encodeURIComponent(files[b.dataset.del].file)}`, { method: "DELETE" }); renderLibrary(); });
+}
+
+async function renderJobs() {
+  const jobs = await api("/api/jobs"), c = $("#content");
+  c.innerHTML = `<h3>Recent downloads</h3>` + (jobs.length ? `<div class="list">${jobs.map(j => `
+    <div class="item"><div class="n">${esc(j.title)}<div class="bar" style="margin-top:6px"><div style="width:${j.state === "done" ? 100 : j.progress || 3}%"></div></div></div>
+    <span class="sub">${j.state === "error" ? "❌ " + esc(j.error) : j.state === "done" ? "✓ Done" : (j.progress ?? "…") + "%"}</span></div>`).join("")}</div>`
+    : `<div class="empty">No activity yet.</div>`);
+}
+
+/* ---------------- viewer ---------------- */
+const video = $("#video");
+function resetPlayer() { if (hls) { hls.destroy(); hls = null; } video.removeAttribute("src"); video.load(); }
+function showViewer(kind, title, status, actionsHtml) {
+  $("#viewer").classList.add("on"); $("#vKind").textContent = kind; $("#vTitle").textContent = title || "";
+  $("#vStatus").textContent = status || ""; $("#vActions").innerHTML = actionsHtml + `<button class="ghost" id="closeV">✕ Close</button>`;
+  $("#closeV").onclick = closeViewer; window.scrollTo({ top: 0, behavior: "smooth" });
+}
+async function closeViewer() {
+  const p = S.player; S.player = null; resetPlayer(); $("#viewer").classList.remove("on");
+  if (p?.type === "live") { const s = (await api("/api/live")).find(x => x.user === p.user); if (s && !s.record && s.state === "running") post(`/api/live/${p.user}/stop`); }
+}
+function playFile(file, title, kind = "Video") {
+  if (IS_APP) { S.player = null; $("#viewer").classList.remove("on"); Android.playFile(file, title || ""); return; }
+  resetPlayer(); S.player = { type: "file", file };
+  video.src = "/media/" + encodeURIComponent(file); video.play().catch(() => {});
+  showViewer(kind, title, "", `<a href="/media/${encodeURIComponent(file)}?dl=1"><button class="primary">⬇ Save to ${IS_PHONE ? "phone" : "computer"}</button></a>`);
+}
+async function waitJob(job, onProgress) {
+  while (job.state === "downloading") { await new Promise(r => setTimeout(r, 700)); job = await api(`/api/jobs/${job.id}`); onProgress?.(job); }
+  if (job.state === "error") throw new Error(job.error);
+  return job;
+}
+async function watchVideo(v) {
+  resetPlayer(); S.player = { type: "loading" };
+  showViewer("Video", v.title, "Fetching video…", "");
+  try {
+    const job = await waitJob(await post("/api/download", { url: v.url, id: v.id, title: v.title }), j => $("#vStatus").textContent = `Fetching video… ${j.progress ?? ""}%`);
+    v.local = job.file; playFile(job.file, v.title);
+  } catch (err) { $("#vStatus").textContent = "Couldn't load: " + err.message; }
+}
+async function downloadVideo(v, saveToComputer) {
+  toast("Downloading…");
+  try {
+    const job = await waitJob(await post("/api/download", { url: v.url, id: v.id, title: v.title }));
+    if (v) v.local = job.file;
+    if (saveToComputer && IS_APP) {
+      Android.saveToPhone(job.file);
+    } else if (saveToComputer && IS_IOS) {  // iPhone needs a real tap to save a file
+      playFile(job.file, v.title); toast("Ready - tap “Save to phone”, then Share → Save Video", 6000);
+    } else {
+      toast("Saved to Downloads tab ✓");
+      if (saveToComputer) { const a = document.createElement("a"); a.href = `/media/${encodeURIComponent(job.file)}?dl=1`; a.click(); }
+    }
+    if (S.tab === "videos") renderVideos();
+  } catch (err) { toast("Download failed: " + err.message, 6000); }
+}
+async function watchLive(u, record = false) {
+  if (IS_APP) {
+    showViewer("● LIVE", "@" + u, "Connecting to live…", "");
+    try {
+      const r = await api(`/api/live/${u}/resolve`);
+      $("#viewer").classList.remove("on");
+      Android.playStream(r.url, JSON.stringify(r.headers || {}), r.title || "@" + u);
+    } catch (err) { $("#vStatus").textContent = err.message; }
+    loadStreamers(); return;
+  }
+  resetPlayer(); S.player = { type: "live", user: u };
+  showViewer("● LIVE", "@" + u, "Connecting to live…", "");
+  let s;
+  try { s = await post(`/api/live/${u}/start`, { record }); }
+  catch (err) { $("#vStatus").textContent = err.message; return; }
+  for (let i = 0; i < 40 && !s.ready && s.state !== "ended"; i++) { await new Promise(r => setTimeout(r, 750)); s = (await api("/api/live")).find(x => x.user === u) || s; }
+  if (S.player?.user !== u) return;
+  if (!s.ready) { $("#vStatus").textContent = "The live didn't start. It may have just ended – try again."; return; }
+  const src = `/live/${u}/index.m3u8`;
+  if (IS_IOS && video.canPlayType("application/vnd.apple.mpegurl")) video.src = src;  // iPhone: built-in player
+  else if (window.Hls && Hls.isSupported()) { hls = new Hls({ liveSyncDurationCount: 3 }); hls.loadSource(src); hls.attachMedia(video); }
+  else video.src = src;
+  video.play().catch(() => {});
+  updateLiveViewer(u, s);
+  loadStreamers();
+}
+function updateLiveViewer(u, s) {
+  showViewer("● LIVE", s.title || "@" + u, s.record ? "Recording to your Downloads…" : "Watching live",
+    s.record ? `<button class="primary" id="stopRec">■ Stop recording</button>` : `<button class="primary" id="startRec">● Record this live</button>`);
+  const sr = $("#startRec"); if (sr) sr.onclick = () => watchLive(u, true);
+  const st = $("#stopRec"); if (st) st.onclick = () => stopLive(u);
+}
+async function recordLive(u) {
+  try { await post(`/api/live/${u}/start`, { record: true }); toast(`Recording @${u}…`); loadStreamers(); }
+  catch (err) { toast(err.message); }
+}
+async function stopLive(u) {
+  const s = await post(`/api/live/${u}/stop`);
+  if (S.player?.user === u) { resetPlayer(); $("#viewer").classList.remove("on"); S.player = null; }
+  toast(s.final_file ? `Recording saved: ${s.final_file}` : IS_APP ? "Stopped – saving the recording to Downloads…" : "Stopped.", 5000);
+  loadStreamers(); renderTab();
+}
+
+/* ---------------- paste link ---------------- */
+/** Any TikTok link (or @username): profile → follow, live → follow + watch, video → watch. */
+async function openLink(raw) {
+  let url = String(raw || "").trim(); if (!url) return false;
+  const inText = url.match(/https?:\/\/\S+/); if (inText) url = inText[0];   // shared text has extra words
+  if (/^@?[A-Za-z0-9._]{2,40}$/.test(url)) { await addStreamer(url); return true; }
+  if (!/tiktok\.com/i.test(url)) { toast("That doesn't look like a TikTok link."); return false; }
+  if (/\/\/(vm|vt)\.tiktok\.com\/|tiktok\.com\/t\//i.test(url)) {            // short share links
+    toast("Opening link…", 2000);
+    try { url = (await post("/api/resolve-link", { url })).url; }
+    catch (err) { toast("Couldn't open that link: " + err.message); return false; }
+  }
+  const live = url.match(/tiktok\.com\/@([^/?#]+)\/live/);
+  if (live) { if (await addStreamer(live[1], true)) watchLive(live[1]); return true; }
+  const vid = url.match(/\/(?:video|photo|v)\/(\d+)/);
+  if (vid) { watchVideo({ url, id: vid[1], title: "TikTok video" }); return true; }
+  const prof = url.match(/tiktok\.com\/@([^/?#]+)/);
+  if (prof) { await addStreamer(prof[1]); return true; }
+  toast("Couldn't tell what that link is. Try a profile, live or video link.");
+  return false;
+}
+$("#pasteForm").onsubmit = async e => {
+  e.preventDefault();
+  if (await openLink($("#pasteUrl").value)) $("#pasteUrl").value = "";
+};
+
+/* ---------------- Discover ---------------- */
+const DEFAULT_TOPICS = ["AI", "Tech", "Gaming", "Music", "Cooking", "Education", "Fitness", "Comedy", "Business", "News", "Art", "Sports"];
+const SEARCH_KINDS = { user: "People", live: "Lives", video: "Videos" };
+let searchKind = "live";
+function myTopics() { try { return JSON.parse(localStorage.getItem("tikview-topics") || "[]"); } catch (e) { return []; } }
+function saveTopics(t) { try { localStorage.setItem("tikview-topics", JSON.stringify(t)); } catch (e) {} }
+function tiktokSearch(q) {
+  q = String(q || "").trim(); if (!q) return;
+  const path = { user: "search/user", live: "search/live", video: "search/video" }[searchKind];
+  const url = `https://www.tiktok.com/${path}?q=${encodeURIComponent(q)}`;
+  if (window.Android) location.href = url;          // opens the TikTok app (or browser)
+  else window.open(url, "_blank", "noopener");
+}
+function renderDiscover() {
+  const c = $("#content"), mine = myTopics();
+  const chip = (t, custom) => `<button class="chip" data-topic="${esc(t)}">${esc(t)}${custom ? `<span class="x" data-del-topic="${esc(t)}" title="Remove">×</span>` : ""}</button>`;
+  const shareTip = window.Android
+    ? `In the TikTok app, open their profile or live and tap <b>Share → TikView</b>.`
+    : `Open their profile or live, tap <b>Share → Copy link</b>, then paste it below.`;
+  c.innerHTML = `
+    <h3>Find streamers</h3>
+    <form class="disc-search" id="discForm">
+      <input type="text" id="discQ" placeholder="Search a topic or name, e.g. AI art" autocomplete="off">
+      <button class="primary">Search</button>
+    </form>
+    <div class="seg" id="discKind">${Object.entries(SEARCH_KINDS).map(([k, v]) => `<button type="button" data-kind="${k}" class="${k === searchKind ? "on" : ""}">${v}</button>`).join("")}</div>
+    <h3>Categories</h3>
+    <div class="chips">${DEFAULT_TOPICS.map(t => chip(t)).join("")}${mine.map(t => chip(t, true)).join("")}<button class="chip add" id="addTopic">+ Add your own</button></div>
+    <div class="steps">
+      <b>Found someone you like?</b>
+      <ol><li>Search opens TikTok's results for <b>${esc(SEARCH_KINDS[searchKind].toLowerCase())}</b>.</li>
+        <li>${shareTip}</li>
+        <li>They're added to your streamers, with live alerts and recording.</li></ol>
+      <form class="disc-search" id="discAdd" style="margin:0">
+        <input type="text" id="discLink" placeholder="Paste a profile, live or video link…" autocomplete="off">
+        <button>Add</button>
+      </form>
+    </div>`;
+  $("#discForm").onsubmit = e => { e.preventDefault(); tiktokSearch($("#discQ").value); };
+  $("#discAdd").onsubmit = async e => { e.preventDefault(); const ok = await openLink($("#discLink").value); if (ok && $("#discLink")) $("#discLink").value = ""; };
+  c.querySelectorAll("[data-kind]").forEach(b => b.onclick = () => { searchKind = b.dataset.kind; renderDiscover(); });
+  c.querySelectorAll("[data-topic]").forEach(b => b.onclick = e => {
+    const del = e.target.closest("[data-del-topic]");
+    if (del) { saveTopics(myTopics().filter(t => t !== del.dataset.delTopic)); renderDiscover(); return; }
+    tiktokSearch(b.dataset.topic);
+  });
+  $("#addTopic").onclick = () => {
+    c.querySelector(".chips").insertAdjacentHTML("beforeend", `<form id="topicForm" style="display:flex;gap:6px"><input type="text" id="topicIn" placeholder="New category" maxlength="30" style="width:150px"><button class="primary">Add</button></form>`);
+    $("#addTopic").remove(); $("#topicIn").focus();
+    $("#topicForm").onsubmit = e => { e.preventDefault(); const t = $("#topicIn").value.trim();
+      if (t && !DEFAULT_TOPICS.includes(t) && !myTopics().includes(t)) saveTopics([...myTopics(), t]); renderDiscover(); };
+  };
+}
+
+/* ---------------- Help ---------------- */
+const ON_COMPUTER = !window.Android && ["127.0.0.1", "localhost", "[::1]"].includes(location.hostname);
+if (!window.Android) document.querySelectorAll(".help-app").forEach(el => el.remove());
+if (!ON_COMPUTER) document.querySelectorAll(".help-desktop").forEach(el => el.remove());
+$("#helpBtn").onclick = () => $("#helpModal").classList.add("on");
+$("#helpClose").onclick = () => $("#helpModal").classList.remove("on");
+$("#helpModal").onclick = e => { if (e.target.id === "helpModal") $("#helpModal").classList.remove("on"); };
+
+/* ---------------- phone pairing ---------------- */
+if (["127.0.0.1", "localhost", "[::1]"].includes(location.hostname)) {
+  const b = $("#connectBtn"); b.style.display = "";
+  b.onclick = async () => {
+    try {
+      const p = await api("/api/pairing");
+      if (!p.lan_enabled) return toast("Phone access is turned off (TIKVIEW_LOCAL_ONLY=1).");
+      $("#qr").innerHTML = p.qr_svg; $("#pairCode").textContent = p.code; $("#pairUrl").textContent = p.url.split("?")[0];
+      $("#pairModal").classList.add("on");
+    } catch (err) { toast(err.message); }
+  };
+}
+if (!IS_APP && "serviceWorker" in navigator && window.isSecureContext) navigator.serviceWorker.register("/sw.js").catch(() => {});
+
+/* ---------------- app hooks ---------------- */
+if (IS_APP) {
+  document.body.classList.add("app");
+  // "Save" links → save into the phone's gallery
+  document.addEventListener("click", e => {
+    const a = e.target.closest && e.target.closest('a[href^="/media/"]');
+    if (!a) return;
+    e.preventDefault();
+    Android.saveToPhone(decodeURIComponent(a.getAttribute("href").slice(7).split("?")[0]));
+  });
+  $("#pasteUrl").placeholder = "Paste a TikTok link (or Share → TikView)…";
+}
+window.openShared = url => openLink(url);
+window.openUser = u => { S.selected = u; renderStreamers(); setTab("videos"); };
+window.handleBack = () => {
+  if ($("#confirmModal").classList.contains("on")) { $("#confirmCancel").click(); return true; }
+  if ($("#helpModal").classList.contains("on")) { $("#helpModal").classList.remove("on"); return true; }
+  if ($("#pairModal").classList.contains("on")) { $("#pairModal").classList.remove("on"); return true; }
+  if ($("#viewer").classList.contains("on")) { closeViewer(); return true; }
+  return false;
+};
+
+/* ---------------- light / dark ---------------- */
+const THEMES = ["auto", "light", "dark"];
+const THEME_LABEL = { auto: "Auto (follows your device)", light: "Light", dark: "Dark" };
+const ICON = d => `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block">${d}</svg>`;
+const THEME_ICON = {
+  auto: ICON('<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/>'),
+  light: ICON('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'),
+  dark: ICON('<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>'),
+};
+const darkQuery = matchMedia("(prefers-color-scheme: dark)");
+function applyTheme(t) {
+  if (!THEMES.includes(t)) t = "auto";
+  document.documentElement.dataset.theme = t;
+  try { localStorage.setItem("tikview-theme", t); } catch (e) {}
+  const b = $("#themeBtn"); b.innerHTML = THEME_ICON[t]; b.title = "Theme: " + THEME_LABEL[t];
+  const dark = t === "dark" || (t === "auto" && darkQuery.matches);
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m => m.content = dark ? "#0f0f12" : "#f6f6f8");
+  if (window.Android && Android.setBars) Android.setBars(dark);   // phone status bar colours
+}
+$("#themeBtn").onclick = () => {
+  const t = THEMES[(THEMES.indexOf(document.documentElement.dataset.theme) + 1) % THEMES.length];
+  applyTheme(t); toast("Theme: " + THEME_LABEL[t], 2000);
+};
+darkQuery.addEventListener("change", () => applyTheme(document.documentElement.dataset.theme));
+applyTheme(document.documentElement.dataset.theme);
+
+/* ---------------- boot ---------------- */
+loadStreamers().then(renderTab);
+setInterval(loadStreamers, 20000);
+setInterval(() => { if (S.tab === "jobs") renderJobs(); }, 2000);
+</script>
+</body>
+</html>
