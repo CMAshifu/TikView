@@ -15,10 +15,10 @@
 </script>
 <style>
   :root { --bg:#0f0f12; --panel:#17171c; --panel2:#1f1f26; --line:#2a2a33; --text:#ececf1;
-          --muted:#9a9aa8; --accent:#fe2c55; --cyan:#25f4ee; --ok:#3ccf7a; color-scheme:dark; }
+          --muted:#9a9aa8; --accent:#e8141c; --cyan:#3d8bff; --ok:#3ccf7a; color-scheme:dark; }
   /* Light mode: chosen in the app, or "Auto" while the device is in light mode */
-  :root[data-theme=light] { --bg:#f6f6f8; --panel:#ffffff; --panel2:#f0f0f3; --line:#e2e2e8; --text:#16161a; --muted:#6b6b78; --accent:#fe2c55; --cyan:#00a39e; --ok:#1fa85c; color-scheme:light; }
-  @media (prefers-color-scheme: light) { :root[data-theme=auto] { --bg:#f6f6f8; --panel:#ffffff; --panel2:#f0f0f3; --line:#e2e2e8; --text:#16161a; --muted:#6b6b78; --accent:#fe2c55; --cyan:#00a39e; --ok:#1fa85c; color-scheme:light; } }
+  :root[data-theme=light] { --bg:#f6f6f8; --panel:#ffffff; --panel2:#f0f0f3; --line:#e2e2e8; --text:#16161a; --muted:#6b6b78; --accent:#d9121a; --cyan:#1f6fe0; --ok:#1fa85c; color-scheme:light; }
+  @media (prefers-color-scheme: light) { :root[data-theme=auto] { --bg:#f6f6f8; --panel:#ffffff; --panel2:#f0f0f3; --line:#e2e2e8; --text:#16161a; --muted:#6b6b78; --accent:#d9121a; --cyan:#1f6fe0; --ok:#1fa85c; color-scheme:light; } }
   body, header, aside, .card, .vinfo, .list .item, .tabs, button, input[type=text] { transition:background-color .2s, color .2s, border-color .2s; }
   #themeBtn { margin-left:auto; padding:8px 10px; line-height:0; }
   * { box-sizing:border-box; }
@@ -34,8 +34,9 @@
   input[type=text] { background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:8px 10px; width:100%; outline:none; }
   input[type=text]:focus { border-color:var(--cyan); }
   header { display:flex; align-items:center; gap:16px; padding:12px 20px; border-bottom:1px solid var(--line); background:var(--panel); position:sticky; top:0; z-index:5; }
-  .logo { font-weight:800; font-size:20px; letter-spacing:-.5px; white-space:nowrap; }
-  .logo span { color:var(--accent); } .logo b { color:var(--cyan); }
+  .logo { font-weight:800; font-size:21px; letter-spacing:-.5px; white-space:nowrap; display:flex; align-items:center; gap:9px; font-style:italic; }
+  .logo-img { width:36px; height:36px; display:block; }
+  .logo .wm { color:var(--accent); padding-right:2px; } .logo b { color:var(--text); }
   .paste { flex:1; display:flex; gap:8px; max-width:640px; }
   .layout { display:grid; grid-template-columns:270px 1fr; min-height:calc(100vh - 57px); }
   aside { border-right:1px solid var(--line); padding:16px; background:var(--panel); }
@@ -137,7 +138,7 @@
 </head>
 <body>
 <header>
-  <div class="logo"><b>Tik</b><span>View</span></div>
+  <div class="logo"><img class="logo-img" src="logo.png" alt=""><span class="wm"><b>Tik</b>View</span></div>
   <form class="paste" id="pasteForm">
     <input type="text" id="pasteUrl" placeholder="Paste any TikTok video link to watch or download…">
     <button class="primary">Open</button>
@@ -202,7 +203,7 @@
 </div></div>
 <div class="modal" id="helpModal"><div class="box help" style="max-width:480px;max-height:88vh;overflow:auto">
   <div class="brand">
-    <div class="logo" style="font-size:28px"><b>Tik</b><span>View</span></div>
+    <img src="logo.png" alt="TikView" style="width:150px;height:150px;display:block;margin:0 auto">
     <div class="sub">Version 1.2</div>
     <div class="by">Created by</div>
     <div class="co">Miracle Computer Technologies</div>
