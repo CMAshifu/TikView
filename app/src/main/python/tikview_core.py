@@ -147,13 +147,71 @@ def resolve_live(user):
             "title": info.get("title") or info.get("description") or ""}
 
 
+SEC_UID_RE = re.compile(r'"secUid"\s*:\s*"(MS4wLjABAAAA[\w-]{64})"')
+
+
+def get_sec_uid(user, refresh=False):
+    """TikTok's hidden account ID (needed to list videos). Cached per streamer."""
+    cfg = streamers.get(user) or {}
+    if cfg.get("sec_uid") and not refresh:
+        return cfg["sec_uid"]
+    from yt_dlp.networking import Request
+    ua = ("Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 "
+          "(KHTML, like Gecko) Chrome/131.0 Mobile Safari/537.36")
+    urls = [
+        f"https://www.tiktok.com/api-live/user/room/?aid=1988&uniqueId={user}&sourceType=54",
+        f"https://webcast.tiktok.com/webcast/room/info_by_user/?aid=1988&unique_id={user}",
+        f"https://www.tiktok.com/@{user}",
+        f"https://www.tiktok.com/@{user}/live",
+    ]
+    sec = None
+    with yt_dlp.YoutubeDL(ydl_opts()) as y:
+        for url in urls:
+            try:
+                resp = y.urlopen(Request(url, headers={"User-Agent": ua, "Referer": "https://www.tiktok.com/"}))
+                m = SEC_UID_RE.search(resp.read().decode("utf-8", "replace"))
+            except Exception:
+                continue
+            if m:
+                sec = m.group(1)
+                break
+    if sec and user in streamers:
+        with lock:
+            streamers[user]["sec_uid"] = sec
+            save_streamers()
+    return sec
+
+
+def _fetch_profile(target, limit):
+    with yt_dlp.YoutubeDL(ydl_opts(extract_flat="in_playlist", playlistend=limit)) as y:
+        return y.extract_info(target, download=False)
+
+
+def fetch_profile(user, limit):
+    """Video list for a user: by known ID first, then by name, then look the ID up and retry."""
+    sec = (streamers.get(user) or {}).get("sec_uid")
+    if sec:
+        try:
+            return _fetch_profile(f"tiktokuser:{sec}", limit)
+        except Exception:
+            pass
+    try:
+        return _fetch_profile(f"https://www.tiktok.com/@{user}", limit)
+    except Exception as first_error:
+        sec = get_sec_uid(user, refresh=True)
+        if not sec:
+            raise RuntimeError(
+                "TikTok didn't share this profile's video list. Their lives can still be "
+                "watched and recorded, and you can paste or share any of their video links.") from first_error
+        return _fetch_profile(f"tiktokuser:{sec}", limit)
+
+
 def list_videos(user, limit):
     cached = video_cache.get(user)
     if cached and time.time() - cached[0] < 600 and len(cached[1]) >= limit:
         vids = cached[1][:limit]
     else:
-        with yt_dlp.YoutubeDL(ydl_opts(extract_flat="in_playlist", playlistend=limit)) as y:
-            info = y.extract_info(f"https://www.tiktok.com/@{user}", download=False)
+        info = fetch_profile(user, limit)
         vids = []
         for e in list(info.get("entries") or [])[:limit]:
             if not e:
